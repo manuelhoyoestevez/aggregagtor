@@ -3,7 +3,7 @@ const { insertBBDDITA } = require('../insertBBDD/insertPostgreSQL');
 async function consumeMessages(postgresClient, rabbitChannel, queueName) {
     await rabbitChannel.consume(queueName, async function(msg) {
         
-        console.log(" [x] Received %s", msg.content.toString());
+        //console.log(" [x] Received %s", msg.content.toString());
         
         const dato = JSON.parse(msg.content);
 
