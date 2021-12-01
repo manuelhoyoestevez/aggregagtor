@@ -5,8 +5,8 @@ const amqplib = require('amqplib')
 
 
 const ampq_url = config.rabbitURL
-console.log ("config",config)
-console.log ("ampq",ampq_url)
+//console.log ("config",config)
+//console.log ("ampq",ampq_url)
 async function produce(msg) {
 
     const conn = await amqplib.connect(ampq_url, "heartbeat=60")
