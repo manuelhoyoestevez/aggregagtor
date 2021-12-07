@@ -25,14 +25,8 @@ const client = new Client(pgITA);
     } catch (e){
         console.error('Error Occurred', e)
         throw new Error(e)
-    }
-    console.log("dc",dc) 
-    
-    produce(JSON.stringify({
-        type: 'AgregadorITA',
-        dataDC: dc
-    }))    
-
+    }    
+      
     try {
         const query = `WITH RECURSIVE subordinates AS (
             SELECT
@@ -57,19 +51,13 @@ const client = new Client(pgITA);
     } catch (e){
         console.error('Error Occurred', e)
         throw new Error(e)
-    }
-    console.log("room",room) 
-    
-    produce(JSON.stringify({
-        type: 'AgregadorITA',
-        dataRooms: room
-    }))
+    }     
 
     try {
         const query = `SELECT uuid, identifiable_type, label, parent_uuid 
-        FROM identifiable 
-        WHERE parent_uuid IN('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235') 
-        AND identifiable_type = 'Row' `;
+            FROM identifiable 
+            WHERE parent_uuid IN('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235') 
+            AND identifiable_type = 'Row' `;
 
         let res = await client.query(query)
         row = row.concat(res.rows) 
@@ -78,13 +66,7 @@ const client = new Client(pgITA);
         console.error('Error Occurred', e)
         throw new Error(e)
     }
-    console.log("row",row) 
-    
-    produce(JSON.stringify({
-        type: 'AgregadorITA',
-        dataRows: row
-    }))   
-    
+            
     try {
         const infoUs = ['AVAILABLE_USPACE','USED_USPACE','TOTAL_USPACE', 'RESERVED_USPACE']
 
@@ -104,7 +86,7 @@ const client = new Client(pgITA);
         )
         SELECT DISTINCT ON (label) label, identifiable_type, row, uuid, parent_uuid
         FROM subordinates
-		WHERE identifiable_type = 'Rack' AND label SIMILAR TO '(P2%|SC1%)'`;
+        WHERE identifiable_type = 'Rack' AND label SIMILAR TO '(P2%|SC1%)'`;
 
         let res = await client.query(query)
         rack = rack.concat(res.rows)         
@@ -122,13 +104,29 @@ const client = new Client(pgITA);
             let resUs =  await client.query(queryUs)            
            
             r[`${us}`] = resUs.rows[0].integer_value
-            
+                      
             }))
-            
-        }))
-          
-        console.log("nuevo rack", rack)
 
+            if (r.USED_USPACE === 0) {
+                r[`empty`] = 'true'
+            } else {
+                const queryEmpty = `SELECT P.identifiable_type = 'Layer1NetworkGear' AS layer1
+                FROM  identifiable P
+                WHERE P.parent_uuid = '${r.uuid}' AND p.rack_mount_chassis_rack_mounting_position= 'FRONT'
+                group by layer1
+                order by layer1`
+                
+                let resEmpty =  await client.query(queryEmpty)
+
+                if ( resEmpty.rows[0].layer1===false ) {
+                    r[`empty`] = 'false'
+                } else {
+                    r[`empty`] = 'true'
+                }
+            }
+            
+        }))                
+        
     } catch (e){
         console.error('Error Occurred', e)
         throw new Error(e)
@@ -136,6 +134,9 @@ const client = new Client(pgITA);
     
     produce(JSON.stringify({
         type: 'AgregadorITA',
+        dataDC: dc,
+        dataRooms: room,
+        dataRows: row,
         dataRacks: rack
     }))   
 
