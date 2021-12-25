@@ -124,8 +124,9 @@ const client = new Client(pgITA);
                     r[`empty`] = 'true'
                 }
             }
-            
-        }))                
+            r["timestamp"] = new Date()
+        }))     
+        console.log("rack", rack)           
         
     } catch (e){
         console.error('Error Occurred', e)
