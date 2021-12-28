@@ -30,18 +30,18 @@ const client = new Client(pgITA);
     try {
         const query = `WITH RECURSIVE subordinates AS (
             SELECT
-				uuid, identifiable_type, label,	parent_uuid, parent_uuid as p_uuid
+				uuid, identifiable_type, label, parent_uuid, parent_uuid as p_uuid, label AS p_dc
             FROM
                 public.identifiable
             WHERE
-                parent_uuid IN('673cb62a-1e5d-40f0-91a1-3e788799cbff', 'a1d64202-194a-4b44-820e-0524bfec20e1')
+                uuid IN('673cb62a-1e5d-40f0-91a1-3e788799cbff', 'a1d64202-194a-4b44-820e-0524bfec20e1')
             UNION
                 SELECT
                     I.uuid, I.identifiable_type, I.label, I.parent_uuid,
-					S.p_uuid				
+					S.p_uuid, S.p_dc				
                 FROM public.identifiable I INNER JOIN subordinates S ON I.parent_uuid = S.uuid
         )
-        SELECT identifiable_type, label, uuid ,p_uuid
+        SELECT identifiable_type, label, uuid ,p_uuid, p_dc
         FROM subordinates
 		WHERE label IN('P2-DC','SC1-ACG1','SC1-DC') `;
 
@@ -54,10 +54,22 @@ const client = new Client(pgITA);
     }     
 
     try {
-        const query = `SELECT uuid, identifiable_type, label, parent_uuid 
-            FROM identifiable 
-            WHERE parent_uuid IN('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235') 
-            AND identifiable_type = 'Row' `;
+        const query = `WITH RECURSIVE subordinates AS (
+            SELECT
+				uuid, identifiable_type, label, parent_uuid, parent_uuid as p_uuid, label AS p_room
+            FROM
+                public.identifiable
+            WHERE
+                uuid IN('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235')
+            UNION
+                SELECT
+                    I.uuid, I.identifiable_type, I.label, I.parent_uuid,
+					S.p_uuid, S.p_room				
+                FROM public.identifiable I INNER JOIN subordinates S ON I.parent_uuid = S.uuid
+        )
+        SELECT identifiable_type, label, uuid ,p_uuid, p_room
+        FROM subordinates
+		WHERE identifiable_type = 'Row' `;
 
         let res = await client.query(query)
         row = row.concat(res.rows) 
@@ -72,7 +84,7 @@ const client = new Client(pgITA);
 
         const query = `WITH RECURSIVE subordinates AS (
             SELECT
-                uuid, identifiable_type, label, parent_uuid, label as row
+                uuid, identifiable_type, label, parent_uuid, uuid AS id_row, label AS row
             FROM
                 public.identifiable
             WHERE
@@ -81,12 +93,13 @@ const client = new Client(pgITA);
             UNION
                 SELECT
                     I.uuid, I.identifiable_type, I.label, I.parent_uuid,
-                    S.row					
-                FROM public.identifiable I INNER JOIN subordinates S ON I.parent_uuid = S.parent_uuid
+                    S.id_row, S.row					
+                FROM public.identifiable I INNER JOIN subordinates S ON I.row_id = S.uuid
         )
-        SELECT DISTINCT ON (label) label, identifiable_type, row, uuid, parent_uuid
+        SELECT label, identifiable_type, row, uuid, id_row
         FROM subordinates
-        WHERE identifiable_type = 'Rack' AND label SIMILAR TO '(P2%|SC1%)'`;
+        WHERE identifiable_type = 'Rack' AND label SIMILAR TO '(P2%|SC1%)'
+		ORDER BY label, row `;
 
         let res = await client.query(query)
         rack = rack.concat(res.rows)         
