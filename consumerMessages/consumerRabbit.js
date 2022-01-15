@@ -1,4 +1,4 @@
-const { insertBBDDITA } = require('../insertBBDD/insertPostgreSQL');
+const { insertBBDDITA } = require('../insertBBDD/insertPostgreSQL/insertPostgreSQL');
 
 async function consumeMessages(postgresClient, rabbitChannel, queueName) {
     await rabbitChannel.consume(queueName, async function(msg) {
