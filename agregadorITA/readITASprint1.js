@@ -57,22 +57,9 @@ const client = new Client(pgITA);
     }     
 
     try {
-        const query = `WITH RECURSIVE subordinates AS (
-            SELECT
-				uuid, identifiable_type, label, parent_uuid, parent_uuid as p_uuid, label AS p_room
-            FROM
-                public.identifiable
-            WHERE
-                uuid IN('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235')
-            UNION
-                SELECT
-                    I.uuid, I.identifiable_type, I.label, I.parent_uuid,
-					S.p_uuid, S.p_room				
-                FROM public.identifiable I INNER JOIN subordinates S ON I.parent_uuid = S.uuid
-        )
-        SELECT identifiable_type, label, uuid ,p_uuid, p_room
-        FROM subordinates
-		WHERE identifiable_type = 'Row' `;
+        const query = `SELECT uuid, identifiable_type, label, room_id as parent_uuid 
+            FROM identifiable 
+            WHERE identifiable_type = 'Row' AND room_id IN ('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235') `;
 
         let res = await client.query(query)
         row = row.concat(res.rows) 
