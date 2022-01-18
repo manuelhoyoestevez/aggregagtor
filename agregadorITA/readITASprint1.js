@@ -21,6 +21,7 @@ const client = new Client(pgITA);
 
         let res = await client.query(query)
         dc = dc.concat(res.rows) 
+        console.log("DC", dc)           
 
     } catch (e){
         console.error('Error Occurred', e)
@@ -47,6 +48,8 @@ const client = new Client(pgITA);
 
         let res = await client.query(query)
         room = room.concat(res.rows) 
+        console.log("ROOM", room)           
+
 
     } catch (e){
         console.error('Error Occurred', e)
@@ -138,8 +141,7 @@ const client = new Client(pgITA);
                 }
             }
             r["timestamp"] = new Date()
-        }))     
-        console.log("rack", rack)           
+        }))             
         
     } catch (e){
         console.error('Error Occurred', e)
