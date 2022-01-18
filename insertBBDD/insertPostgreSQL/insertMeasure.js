@@ -5,9 +5,7 @@ async function insertMeasureRacks(postgresClient, dataRacks) {
     let insertSqlFree_U = 'INSERT INTO bjumperv2."MeasureValue"("idItem","idMeasure","Value","MeasureTimestamp","idOriginSystem") VALUES  '
     let insertSqlEmpty = 'INSERT INTO bjumperv2."MeasureValue"("idItem","idMeasure","Value","MeasureTimestamp","idOriginSystem") VALUES '
 
-    primero = true;     
-    
-
+    primero = true;      
 
     for (let data of dataRacks) {       
         if (primero) {
@@ -55,7 +53,6 @@ async function insertMeasureRacks(postgresClient, dataRacks) {
     await postgresClient.query(insertSqlEmpty +';');
    
 }
-
 
 async function insertMeasureRoom(postgresClient) {
      
