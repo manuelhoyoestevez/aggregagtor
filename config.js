@@ -12,6 +12,7 @@ const config = {
         database: process.env.PG_DATABASE_ITA,
         password: process.env.PG_PASSWORD_ITA,
         port: process.env.PG_PORT,
-    }
+    },
+    urlDCE: process.env.DCE_URL
 }
 module.exports = config
