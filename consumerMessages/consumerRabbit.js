@@ -1,4 +1,5 @@
 const { insertBBDDITA } = require('../insertBBDD/insertPostgreSQL/insertPostgreSQL');
+const { insertBBDDFile } = require('../insertBBDD/insertPostgreSQL/insertPostgreSQLFile');
 
 async function consumeMessages(postgresClient, rabbitChannel, queueName) {
     await rabbitChannel.consume(queueName, async function(msg) {
@@ -9,6 +10,9 @@ async function consumeMessages(postgresClient, rabbitChannel, queueName) {
         switch (dato.type){        
             case 'AgregadorITA':
                 await insertBBDDITA (postgresClient, dato);
+                break;                         
+            case 'AgreggatorFile':
+                await insertBBDDFile (postgresClient, dato);
                 break;                         
             default:
                 console.error("tipo desconocido: " + dato);

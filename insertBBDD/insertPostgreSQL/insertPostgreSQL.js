@@ -18,6 +18,8 @@ async function insertBBDDITA(postgresClient, aggrData) {
     //DATOS DC
 
     const dcIds = aggrData.dataDC.map(data => "'" + data.uuid + "'").join(",");
+
+
     
     let res = await postgresClient.query(
         `SELECT * FROM bjumperv2."OriginSystem-Item" WHERE "idIteminOrigin" IN (${dcIds})`
