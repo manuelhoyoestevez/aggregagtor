@@ -1,6 +1,6 @@
 const {Client} = require('pg');
 const {pgITA} = require('../config');
-const { produce } = require('../publishRabbit.js')
+const { produce } = require('../publishRabbit.js');
 
 const client = new Client(pgITA);
 
