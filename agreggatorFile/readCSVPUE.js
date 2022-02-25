@@ -6,7 +6,7 @@ const { produce } = require("../publishRabbit.js");
   //let writeCSV;
   const dcs = [];
   try {
-    fs.createReadStream("./file/PUE.csv")
+    fs.createReadStream("./file/PUEv2.csv")
       .pipe(csv({}))
       .on("data", (data) => dcs.push(data))
       .on("end", () => {
