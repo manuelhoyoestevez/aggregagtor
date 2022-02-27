@@ -1,37 +1,44 @@
-const {Client} = require('pg');
-const {pgITA} = require('../config');
+const { Client } = require("pg");
+const { pgITA } = require("../config");
 const { produce } = require('../publishRabbit.js');
 
 const client = new Client(pgITA);
 
-(async ()=> {
-    await client.connect((err) => {
-        console.log('connect err:', err);
-    });
-    
-    let dc= []
-    let room = [] 
-    let row = []
-    let rack = []
+const timestamp = new Date().toISOString();
 
-    try {
-        const query = `SELECT uuid, identifiable_type, label, parent_uuid 
+(async () => {
+  await client.connect((err) => {
+    console.log("connect err:", err);
+  });
+
+  let dataItems = [];
+
+  try {
+    const query = `SELECT uuid, identifiable_type, label, parent_uuid 
         FROM identifiable 
         WHERE label IN('SC1', 'PL1')`;
 
-        let res = await client.query(query)
-        dc = dc.concat(res.rows) 
-        console.log("DC", dc)           
+    let res = await client.query(query);
 
-    } catch (e){
-        console.error('Error Occurred', e)
-        throw new Error(e)
-    }    
-      
-    try {
-        const query = `WITH RECURSIVE subordinates AS (
+    dataItems = dataItems.concat(
+      res.rows.map((dc) => ({
+        idItem: dc.uuid,
+        itemClass: "Datacenter",
+        name: dc.label,
+        parentIdItem: dc.parent_uuid,
+        parentName: null,
+        measures: [],
+      }))
+    );
+  } catch (e) {
+    console.error("Error Occurred", e);
+    throw new Error(e);
+  }
+
+  try {
+    const query = `WITH RECURSIVE subordinates AS (
             SELECT
-				uuid, identifiable_type, label, parent_uuid, parent_uuid as p_uuid, label AS p_dc
+				uuid, identifiable_type, label, parent_uuid, uuid as p_uuid, label AS p_dc
             FROM
                 public.identifiable
             WHERE
@@ -46,29 +53,48 @@ const client = new Client(pgITA);
         FROM subordinates
 		WHERE label IN('P2-DC','SC1-ACG1','SC1-DC') `;
 
-        let res = await client.query(query)
-        room = room.concat(res.rows) 
-        console.log("ROOM", room)           
+    let res = await client.query(query);
 
+    dataItems = dataItems.concat(
+      res.rows.map((room) => ({
+        idItem: room.uuid,
+        itemClass: "Room",
+        name: room.label,
+        parentIdItem: room.p_uuid,
+        parentName: null,
+        measures: [],
+      }))
+    );
+  } catch (e) {
+    console.error("Error Occurred", e);
+    throw new Error(e);
+  }
 
-    } catch (e){
-        console.error('Error Occurred', e)
-        throw new Error(e)
-    }     
-
-    try {
-        const query = `SELECT uuid, identifiable_type, label, room_id as parent_uuid 
+  try {
+    const query = `SELECT uuid, identifiable_type, label, room_id as parent_uuid 
             FROM identifiable 
             WHERE identifiable_type = 'Row' AND room_id IN ('1b766edc-2667-44b1-8bb9-41f572757bff','9f20756c-1231-4aa0-8e8b-9d2ad72ef6dd','5ad8b855-a44f-48fe-8ba1-83a1c3464235') `;
 
-        let res = await client.query(query)
-        row = row.concat(res.rows) 
+    let res = await client.query(query);
 
-    } catch (e){
-        console.error('Error Occurred', e)
-        throw new Error(e)
-    }
-            
+    dataItems = dataItems.concat(
+      res.rows.map((row) => ({
+        idItem: row.uuid,
+        itemClass: "Row",
+        name: row.label,
+        parentIdItem: row.parent_uuid,
+        parentName: null,
+        measures: [],
+      }))
+    );
+
+    
+  } catch (e) {
+    console.error("Error Occurred", e);
+    throw new Error(e);
+  }
+
+  
     try {
         const infoUs = ['AVAILABLE_USPACE','USED_USPACE','TOTAL_USPACE', 'RESERVED_USPACE']
 
@@ -92,8 +118,70 @@ const client = new Client(pgITA);
 		ORDER BY label, row `;
 
         let res = await client.query(query)
-        rack = rack.concat(res.rows)         
+        //rack = rack.concat(res.rows)
+
+        const racks = res.rows.map((rack) => ({
+            idItem: rack.uuid,
+            itemClass: "Rack",
+            name: rack.label,
+            parentIdItem: rack.id_row,
+            parentName: null,
+            measures: [],
+        }));
+
+        let rackIds = [];
+        const rackIndex = {};
+
+        for(const rack of racks) {
+            rackIds.push(rack.idItem);
+            rackIndex[rack.idItem] = rack;
+        }
+
+        const rackMeasureQuery = `SELECT uuid, label, series_type, integer_value, double_value 
+        FROM identifiable I 
+            INNER JOIN kpi_history_point_latest KPI_h ON I.uuid = KPI_h.identifiable_uuid 
+            INNER JOIN kpi_metric KPI_m ON KPI_m.kpi_history_point_id = KPI_h.history_point_uuid
+        WHERE uuid IN (${rackIds.map(id => `'${id}'` ).join(',')}) 
+        AND series_type IN ('AVAILABLE_USPACE','USED_USPACE','TOTAL_USPACE')`;
+
         
+
+        const measuresUs = await client.query(rackMeasureQuery);
+
+        const measuMaster = {
+            AVAILABLE_USPACE: 'Free_U',
+            TOTAL_USPACE: 'Total_U',
+            USED_USPACE: 'Used_U'
+        };
+
+        for(const measureU of measuresUs.rows) {
+            rackIndex[measureU.uuid].measures.push({
+                name: measuMaster[measureU.series_type],
+                value: measureU.integer_value,
+                timestamp: timestamp
+            });
+        }
+
+        dataItems = dataItems.concat(racks);
+
+
+        const toSend = {
+            originSystem: "ITA",
+            dataItems: dataItems,
+          };
+        produce(JSON.stringify(toSend));
+
+/*        dataItems = dataItems.concat(
+            res.rows.map((rack) => ({
+              idItem: rack.uuid,
+              itemClass: "rack",
+              name: rack.label,
+              parentIdItem: rack.id_row,
+              parentName: null,
+              measures: [],
+            }))
+          );*/
+        /*
         await Promise.all(rack.map(async (r) =>{
         
             await Promise.all( infoUs.map( async (us)=>{
@@ -128,21 +216,14 @@ const client = new Client(pgITA);
                 }
             }
             r["timestamp"] = new Date()
-        }))             
+        }))  */           
         
     } catch (e){
         console.error('Error Occurred', e)
         throw new Error(e)
     }   
     
-    produce(JSON.stringify({
-        type: 'AgregadorITA',
-        dataDC: dc,
-        dataRooms: room,
-        dataRows: row,
-        dataRacks: rack
-    }))   
+   
 
-    await client.end();
-
-})()
+  await client.end();
+})();
