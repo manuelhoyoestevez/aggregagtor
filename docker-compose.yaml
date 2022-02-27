@@ -1,0 +1,34 @@
+services:
+  me-rabbitmq:
+    image: "rabbitmq:3.8.19-management" #version
+    container_name: "me-rabbitmq"
+    hostname: "me-rabbitmq"
+    environment:
+      SERVICE_NAME: "me-rabbitmq"
+      RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG" #
+      RABBITMQ_DEFAULT_USER: "rabbitmq" #creo un usuario
+      RABBITMQ_DEFAULT_PASS: "rabbitmq" #creo el password
+      RABBITMQ_DEFAULT_VHOST: "/"
+    expose: #los puertos para exponerlos dentro d la red y otros contenedores puedan atacarlos
+      - 5671
+      - 5672
+      - 15672
+    ports: #mapea los puertos puerto del ordenador:ppuerto del contenedor
+      - 5671:5671
+      - 5672:5672
+      - 15672:15672
+
+  me-postgres:
+    container_name: me-postgres
+    hostname: me-postgres
+    image: postgres:9.6.2
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes: #mapeo de carpetas de la maquina local a la carpeta del contenedor
+      - ./setup.sql:/docker-entrypoint-initdb.d/setup.sql:ro
+    ports:
+      - 5432:5432
