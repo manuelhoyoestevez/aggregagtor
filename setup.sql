@@ -19,29 +19,23 @@ CREATE TABLE "ItemClass" (
     "Name"           VARCHAR(250) UNIQUE NOT NULL
 );
 
-CREATE TABLE "Item" (
-    "idItem"         BIGSERIAL PRIMARY KEY,
-    "Name"           VARCHAR(250) NOT NULL,
-    "idItemClass"    BIGINT NOT NULL,
-    "idParent"       BIGINT NOT NULL,
-    "Active"         BOOLEAN NOT NULL,
-    FOREIGN KEY ("idItemClass") REFERENCES "ItemClass" ("idItemClass"),
-    FOREIGN KEY ("idParent") REFERENCES "Item" ("idItem")
-);
-
 CREATE TABLE "OriginSystem" (
     "idOriginSystem" BIGSERIAL PRIMARY KEY,
     "Name"           VARCHAR(250) UNIQUE NOT NULL
 );
 
-CREATE TABLE "OriginSystem-Item" (
-    "idOriginSystem" BIGINT NOT NULL,
-    "idItem"         BIGINT NOT NULL,
+CREATE TABLE "Item" (
+    "idItem"         BIGSERIAL PRIMARY KEY,
+    "Name"           VARCHAR(250) NOT NULL,
+    "idItemClass"    BIGINT NOT NULL,
     "idIteminOrigin" VARCHAR(250) NOT NULL,
-    PRIMARY KEY ("idOriginSystem", "idItem"),
+    "idOriginSystem" BIGINT NOT NULL,
+    "idParent"       BIGINT DEFAULT NULL,
+    "Active"         BOOLEAN NOT NULL,
     UNIQUE      ("idOriginSystem", "idIteminOrigin"),
+    FOREIGN KEY ("idItemClass") REFERENCES "ItemClass" ("idItemClass"),
     FOREIGN KEY ("idOriginSystem") REFERENCES "OriginSystem" ("idOriginSystem"),
-    FOREIGN KEY ("idItem") REFERENCES "Item" ("idItem")
+    FOREIGN KEY ("idParent") REFERENCES "Item" ("idItem")
 );
 
 CREATE TABLE "UnitDataType" (
@@ -71,10 +65,8 @@ CREATE TABLE "MeasureValue" (
     "idMeasure"      BIGINT NOT NULL,
     "Value"          VARCHAR(250) DEFAULT NULL,
     "MeasureTimestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    "idOriginSystem" BIGINT NOT NULL,
     FOREIGN KEY ("idItem") REFERENCES "Item" ("idItem"),
-    FOREIGN KEY ("idMeasure") REFERENCES "Measure" ("idMeasure"),
-    FOREIGN KEY ("idOriginSystem") REFERENCES "OriginSystem" ("idOriginSystem")
+    FOREIGN KEY ("idMeasure") REFERENCES "Measure" ("idMeasure")
 );
 
 INSERT INTO "OriginSystem" ("idOriginSystem", "Name") VALUES

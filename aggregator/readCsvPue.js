@@ -47,7 +47,7 @@ const translateDate = (date) => {
                 }
 
                 index[idItem]['itemClass'] = csvRow['Class'];
-                index[idItem]['name'] = csvRow['Name'];
+                index[idItem]['name'] = csvRow['Item'];
                 index[idItem]['measures'].push({
                     name: csvRow['Measure'],
                     value: csvRow['Value'],

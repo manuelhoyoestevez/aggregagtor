@@ -1,12 +1,7 @@
-const { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItemsIndex } = require('./dbOperations');
+const { getOriginSystemId, getItemClasses, getSystemItemsIndex, insertItems, updateItems, insertMeasures } = require('./dbOperations');
 
 const processMessage = async ({ originSystem, dataItems }) => {
-
-console.log('originSystem = ', originSystem);
-
     const originSystemId = await getOriginSystemId(originSystem);
-
-console.log('originSystemId = ', originSystemId);
 
     const itemClasses = [];
     const measures = [];
@@ -19,51 +14,50 @@ console.log('originSystemId = ', originSystemId);
     }
 
     const itemClassesIds = await getItemClasses(itemClasses);
-    const measuresIds = await getMeasuresIds(measures);
     const systemItemsIndex = await getSystemItemsIndex(originSystemId);
-
-console.log('itemClassesIds = ', itemClassesIds);
-console.log('measuresIds = ', measuresIds);
-console.log('systemItemsIndex = ', systemItemsIndex);
-
     const systemItemsToCreate = [];
     const systemItemsToUpdate = [];
     
     for(const dataItem of dataItems) {
-        const systemItem = systemItemsIndex[dataItem.itemId];
+        const systemItem = systemItemsIndex[dataItem.idItem];
 
         if (systemItem === undefined) {
             // El item no existe en el sitema, se marca para crear
             systemItemsToCreate.push({
-                idItemInOrigin: dataItem.itemId,
-                idItemClass: itemClassesIds[dataItem.itemClass],
                 Name: dataItem.name,
-                idParent: systemItemsIndex[dataItem.parentIdItem] || null,
-                idParentInOrigin: dataItem.parentIdItem || null, // Ojo aquí, el padre ha tenido que ser insertado antes
+                idItemClass: itemClassesIds[dataItem.itemClass],
+                idIteminOrigin: dataItem.idItem,
+                idOriginSystem: originSystemId,
+                idParent: null,
                 Active: true
             });
 
-        // El item existe en el sitema: comprobar si hay cambios
-        // - Si los hay, marcar para actualizar
-        // - Si no los hay, marcar para no hacer nada
-        } else if(dataItem.name != systemItem.name
-            || itemClassesIds[dataItem.itemClass] != systemItem.idItemClass
-            || dataItem.parentIdItem != systemItem.originParentId
-            || systemItem.active == false
-        ) {
+        } else if (areNotEqual(dataItem, systemItem)) {
+            systemItem.newActive = true;
             systemItemsToUpdate.push({
-                idItem: systemItem.idItem,
+                idItem: systemItem.id,
                 idItemClass: itemClassesIds[dataItem.itemClass],
                 Name: dataItem.name,
-                idParent: systemItemsIndex[dataItem.parentIdItem] || null,
-                idParentInOrigin: dataItem.parentIdItem || null, // Ojo aquí, el padre ha tenido que ser insertado antes
+                idParent: null,
                 Active: true
             });
         }
     }
 
-console.log('systemItemsToCreate = ', systemItemsToCreate);
-console.log('systemItemsToUpdate = ', systemItemsToUpdate);
+    await insertItems(systemItemsToCreate);
+    await updateItems(systemItemsToUpdate);
+    await insertMeasures(dataItems, originSystemId);
+};
+
+const areNotEqual = (dataItem, systemItem) => {
+    
+    console.log('dataItem', dataItem);
+    console.log('systemItem', systemItem);
+
+    return dataItem.name != systemItem.name
+    || itemClassesIds[dataItem.itemClass] != systemItem.idItemClass
+    || dataItem.parentIdItem != systemItem.originParentId
+    || systemItem.active == false;
 };
 
 module.exports = { processMessage };
