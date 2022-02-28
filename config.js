@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config();
 
 const config = {
     auth: {
@@ -13,7 +13,8 @@ const config = {
         password: process.env.PG_PASSWORD,
         port: process.env.PG_PORT,
     }
-}
-console.log(config.auth, config.postgreConnection)
+};
 
-module.exports = config
+console.log('Config loaded:', config);
+
+module.exports = config;

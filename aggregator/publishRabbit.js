@@ -1,8 +1,5 @@
-
-require('dotenv').config()
-const config = require('./config.js')
+const config = require('../config.js')
 const amqplib = require('amqplib')
-
 
 const ampq_url = config.rabbitURL
 //console.log ("config",config)
@@ -29,4 +26,4 @@ async function produce(msg) {
 
 }
 
-module.exports = {produce}
+module.exports = { produce }

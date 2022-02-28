@@ -1,0 +1,23 @@
+{
+  "name": "agregadores",
+  "version": "1.0.0",
+  "description": "Recopilacion de agregadores",
+  "main": "index.js",
+  "author": "Ericka Ramos",
+  "license": "ISC",
+  "scripts": {
+    "pueProducer": "node ./aggregator/readCsvPue.js",
+    "consumer": "node ./consumer/index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.8.0",
+    "axios": "^0.21.1",
+    "csv-parser": "^3.0.0",
+    "dom-parser": "^0.1.6",
+    "dotenv": "^10.0.0",
+    "easy-soap-request": "^4.1.3",
+    "moment": "^2.29.1",
+    "node-fetch": "^2.6.1",
+    "pg": "^8.7.1"
+  }
+}

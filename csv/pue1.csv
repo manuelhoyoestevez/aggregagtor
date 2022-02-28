@@ -1,0 +1,11 @@
+Class,Item,Measure,Value,Timestamp
+Datacenter,Bjumper Lab,PUE,2.3,11/1/2021
+Room,Room A,PUE,2.35,11/2/2021
+Room,Room B,PUE,2.34,11/3/2021
+Rack,A 01,PUE,2.36,11/4/2021
+Rack,A 02,PUE,2.25,11/5/2021
+Rack,A 03,PUE,2.25,11/6/2021
+Row,SC1-AGP,PUE,2.24,11/7/2021
+Row,SC2-AGP,PUE,2.23,11/8/2021
+Row,SC3-AGP,PUE,2.15,11/9/2021
+Row,SC4-AGP,PUE,2.14,11/10/2021
