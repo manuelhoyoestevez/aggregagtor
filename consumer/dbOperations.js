@@ -108,7 +108,7 @@ const getSystemItemsIndex = async originSystemId => {
 
     for (const row of result.rows) {
         index[row.originId] = {
-            deactivate: true,
+            deactivate: row.active,
             ...row,
         };
     }
@@ -117,8 +117,15 @@ const getSystemItemsIndex = async originSystemId => {
 };
 
 const mapItemForInsert = 
-    ({ Name, idItemClass, idIteminOrigin, idOriginSystem, idParent, Active }) => 
-    `('${Name}', ${idItemClass}, '${idIteminOrigin}', ${idOriginSystem}, ${idParent}, ${Active})`;
+    ({ Name, idItemClass, idIteminOrigin, idOriginSystem, idParentinOrigin, Active }) => 
+    '('
+    + `'${Name}', `
+    + `${idItemClass}, `
+    + `'${idIteminOrigin}', `
+    + `${idOriginSystem}, `
+    + (idParentinOrigin ? `(SELECT "idItem" FROM bjumperv2."Item" WHERE "idOriginSystem" = ${idOriginSystem} AND "idIteminOrigin" = '${idParentinOrigin}'), ` : 'NULL, ')
+    + `${Active}`
+    + ')';
 
 const insertItems = async items => {
     if (items.length === 0) {
@@ -126,7 +133,8 @@ const insertItems = async items => {
     }
 
     const query = 'INSERT INTO bjumperv2."Item"("Name", "idItemClass", "idIteminOrigin", "idOriginSystem", "idParent", "Active")'
-    + ' VALUES ' + items.map(mapItemForInsert).join(',') + ';';
+    + ' VALUES\n' + items.map(mapItemForInsert).join(',\n') + ';';
+
     const postgresClient = await postgrePromise;
     return await postgresClient.query(query);
 };

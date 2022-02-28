@@ -13,7 +13,7 @@ function replaceAll(str, find, replace) {
 
 const generateId = (csvRow) => {
     // Devuelve el ID normalizado, en funcion de su classItem y su name
-    return replaceAll(csvRow['Class'] + '_' + csvRow['Item'], ' ', '_').toUpperCase();
+    return csvRow['Id'] || null;
 };
 
 const translateDate = (date) => {
@@ -41,13 +41,13 @@ const translateDate = (date) => {
                         itemClass: null,
                         name: null,
                         parentIdItem: null,
-                        parentName: null,
                         measures: [],
                     };
                 }
 
                 index[idItem]['itemClass'] = csvRow['Class'];
-                index[idItem]['name'] = csvRow['Item'];
+                index[idItem]['name'] = csvRow['Name'];
+                index[idItem]['parentIdItem'] = csvRow['Parent'] || null;
                 index[idItem]['measures'].push({
                     name: csvRow['Measure'],
                     value: csvRow['Value'],

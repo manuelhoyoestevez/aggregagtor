@@ -1,4 +1,5 @@
 const { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItemsIndex, insertItems, updateItems, insertMeasures, deactivateItems } = require('./dbOperations');
+const { reOrderItems } = require('./reOrderItems');
 
 const processMessage = async ({ originSystem, dataItems }) => {
     // Obtener un índice con todos los IDs de los item classes en un objeto { dataItem: dataItemId }, ejemplo: { Datacenter: 1, Row: 3 }
@@ -47,8 +48,6 @@ console.log('originSystemId', originSystemId);
     */
     const systemItemsIndex = await getSystemItemsIndex(originSystemId);
 
-console.log('systemItemsIndex', systemItemsIndex);
-
     // Recorrido de los items que tenemos almacenados en el sistema para el originSystem
     const systemItemsToCreate = [];
     const systemItemsToUpdate = [];
@@ -64,7 +63,8 @@ console.log('systemItemsIndex', systemItemsIndex);
                 idItemClass: itemClassesIds[dataItem.itemClass],
                 idIteminOrigin: dataItem.idItem,
                 idOriginSystem: originSystemId,
-                idParent: null,
+                idParent: systemItemsIndex[dataItem.parentIdItem] || null,
+                idParentinOrigin: dataItem.parentIdItem,
                 Active: true
             });
 
@@ -72,9 +72,11 @@ console.log('systemItemsIndex', systemItemsIndex);
             // El item existe en el sitema y ha cambiado, se añade para modificarlo
             systemItemsToUpdate.push({
                 idItem: systemItem.id,
+                idOriginSystem: systemItem.originId,
                 idItemClass: itemClassesIds[dataItem.itemClass],
                 Name: dataItem.name,
-                idParent: null,
+                idParent: systemItemsIndex[dataItem.parentIdItem].id || null,
+                idParentinOrigin: dataItem.parentIdItem,
                 Active: true
             });
 
@@ -97,8 +99,14 @@ console.log('systemItemsToUpdate', systemItemsToUpdate);
 
 console.log('toDeactivate', toDeactivate);
 
-    // Ejecutar acciones sobre la base de datos
-    await insertItems(systemItemsToCreate);
+    const groups = reOrderItems(systemItemsToCreate);
+
+console.log('groups', groups);
+
+    for(const group of groups) {
+        await insertItems(group);
+    }
+
     await updateItems(systemItemsToUpdate);
     await deactivateItems(toDeactivate);
     await insertMeasures(dataItems, originSystemId, measuresIds);
