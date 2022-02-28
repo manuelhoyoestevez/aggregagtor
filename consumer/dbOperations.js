@@ -15,6 +15,41 @@ const getOriginSystemId = async originSystem => {
     return result.rows[0]['idOriginSystem'];
 };
 
+const getMeasuresIds = async measures => {
+    if (measures.length === 0) {
+        return {};
+    }
+
+    const index = {};
+    const measuresNoRepeat = []
+
+    for (const measure of measures) {
+        if (index[measure] === undefined) {
+            measuresNoRepeat.push(measure);
+            index[measure] = null;
+        }
+    }
+
+    const query =  `SELECT "idMeasure", "Name"
+                    FROM bjumperv2."Measure"
+                    WHERE "Name" IN (${measuresNoRepeat.map(measure => `'${measure}'`).join(',')})`;
+
+    const postgresClient = await postgrePromise;
+    const result = await postgresClient.query(query);
+
+    for (const row of result.rows) {
+        index[row.Name] = row.idMeasure;
+    }
+
+    for (const [name, idMeasure] of Object.entries(index)) {
+        if (idMeasure === null) {
+            throw new Error('Unknown measure: ' + name);
+        }
+    }
+
+    return index;
+};
+
 const getItemClasses = async itemClasses => {
     if (itemClasses.length === 0) {
         return {};
@@ -73,7 +108,7 @@ const getSystemItemsIndex = async originSystemId => {
 
     for (const row of result.rows) {
         index[row.originId] = {
-            newActive: false,
+            deactivate: true,
             ...row,
         };
     }
@@ -115,15 +150,15 @@ const updateItems = async items => {
     return await postgresClient.query(query);
 };
 
-const mapItemForMeasure = ({ itemIdInOrigin, originSystemId, name, value, timestamp }) =>
+const mapItemForMeasure = ({ itemIdInOrigin, originSystemId, measureId, value, timestamp }) =>
     '(' 
     + `(SELECT "idItem" FROM bjumperv2."Item" WHERE "idIteminOrigin" = '${itemIdInOrigin}' AND "idOriginSystem" = ${originSystemId}),`
-    + `(SELECT "idMeasure" FROM bjumperv2."Measure" WHERE "Name" = '${name}'),`
+    + `${measureId},`
     + `'${value}',`
     + `'${timestamp}'`
     + ')';
 
-const insertMeasures = async (dataItems, originSystemId) => {
+const insertMeasures = async (dataItems, originSystemId, measuresIds) => {
     if (dataItems.length === 0) {
         return null;
     }
@@ -132,14 +167,26 @@ const insertMeasures = async (dataItems, originSystemId) => {
 
     for(const dataItem of dataItems) {
         for (const measure of dataItem.measures) {
-            measures.push({ itemIdInOrigin: dataItem.idItem, originSystemId, ...measure });
+            measures.push({ measureId: measuresIds[measure.name], itemIdInOrigin: dataItem.idItem, originSystemId, ...measure });
         }
     }
 
-    const query = 'INSERT INTO bjumperv2."MeasureValue" ("idItem", "idMeasure", "Value", "MeasureTimestamp")\n'
-    + ' VALUES ' + measures.map(mapItemForMeasure).join(',\n') + ';'
+    const query = 'INSERT INTO bjumperv2."MeasureValue" ("idItem", "idMeasure", "Value", "MeasureTimestamp")'
+    + ' VALUES \n' + measures.map(mapItemForMeasure).join(',\n') + ';'
+
     const postgresClient = await postgrePromise;
     return await postgresClient.query(query);
 }
 
-module.exports = { getOriginSystemId, getItemClasses, getSystemItemsIndex, insertItems, updateItems, insertMeasures };
+const deactivateItems = async dataItemsIds => {
+    if (dataItemsIds.length === 0) {
+        return null;
+    }
+
+    const query = 'UPDATE bjumperv2."Item" SET "Active" = false '
+    + `WHERE "idItem" IN (${dataItemsIds.map(dataItemId => `'${dataItemId}'`).join(',')});`;
+    const postgresClient = await postgrePromise;
+    return await postgresClient.query(query);
+};
+
+module.exports = { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItemsIndex, insertItems, updateItems, insertMeasures, deactivateItems };
