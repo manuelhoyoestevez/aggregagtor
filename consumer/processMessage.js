@@ -68,7 +68,7 @@ console.log('systemItemsIndex', systemItemsIndex);
                 Active: true
             });
 
-        } else if (areNotEqual(dataItem, systemItem)) {
+        } else if (areNotEqual(dataItem, systemItem, itemClassesIds)) {
             // El item existe en el sitema y ha cambiado, se añade para modificarlo
             systemItemsToUpdate.push({
                 idItem: systemItem.id,
@@ -80,8 +80,10 @@ console.log('systemItemsIndex', systemItemsIndex);
 
             // Se marca el item de sistema para que no sea desactivado
             systemItem.deactivate = false;
+        } else {
+            // En cualquier otro caso...
+            systemItem.deactivate = false;
         }
-        // En cualquier otro caso, ese item queda intacto y no se realiza ninguna acción
     }
 
 console.log('systemItemsToCreate', systemItemsToCreate);
@@ -102,16 +104,11 @@ console.log('toDeactivate', toDeactivate);
     await insertMeasures(dataItems, originSystemId, measuresIds);
 };
 
-const areNotEqual = (dataItem, systemItem) => {
-
-console.log('dataItem', dataItem);
-console.log('systemItem', systemItem);
-
-    return true;
+const areNotEqual = (dataItem, systemItem, itemClassesIds) => {
     return dataItem.name != systemItem.name
-    || itemClassesIds[dataItem.itemClass] != systemItem.idItemClass
-    || dataItem.parentIdItem != systemItem.originParentId
-    || systemItem.active == false;
+        || itemClassesIds[dataItem.itemClass] != systemItem.itemClassId
+        || dataItem.parentIdItem != systemItem.originParentId
+        || systemItem.active == false;
 };
 
 module.exports = { processMessage };
