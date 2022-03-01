@@ -92,16 +92,17 @@ const getSystemItemsIndex = async originSystemId => {
     const index = {};
 
     const query =  `SELECT 
-                        I."idItem" AS "id",
-                        I."idIteminOrigin" AS "originId",
+                        X."idItem" AS "id",
+                        X."idIteminOrigin" AS "originId",
                         I."Name" AS name,
                         I."idItemClass" AS "itemClassId",
                         I."idParent" as "parentId",
                         I."Active" AS "active",
-                        P."idIteminOrigin" AS "originParentId"
-                    FROM bjumperv2."Item" I
-                        LEFT OUTER JOIN bjumperv2."Item" P ON I."idParent" = P."idItem"
-                    WHERE I."idOriginSystem" = ${originSystemId}`;
+                        Y."idIteminOrigin" AS "originParentId"
+                    FROM bjumperv2."OriginSystem-Item" X
+                        LEFT OUTER JOIN bjumperv2."Item" I ON X."idItem" = I."idItem"
+                        LEFT OUTER JOIN bjumperv2."OriginSystem-Item" Y ON I."idParent" = Y."idItem"
+                    WHERE X."idOriginSystem" = ${originSystemId}`;
 
     const postgresClient = await postgrePromise;
     const result = await postgresClient.query(query);
@@ -117,14 +118,20 @@ const getSystemItemsIndex = async originSystemId => {
 };
 
 const mapItemForInsert = 
-    ({ Name, idItemClass, idIteminOrigin, idOriginSystem, idParentinOrigin, Active }) => 
+    ({ Name, idItemClass, idOriginSystem, idParentinOrigin, Active }) => 
     '('
     + `'${Name}', `
     + `${idItemClass}, `
+    + (idParentinOrigin ? `(SELECT "idItem" FROM bjumperv2."OriginSystem-Item" WHERE "idOriginSystem" = ${idOriginSystem} AND "idIteminOrigin" = '${idParentinOrigin}'), ` : 'NULL, ')
+    + `${Active}`
+    + ')';
+
+const mapItemOriginSystemForInsert = 
+    ({ idIteminOrigin, idOriginSystem, idItem }) => 
+    '('
     + `'${idIteminOrigin}', `
     + `${idOriginSystem}, `
-    + (idParentinOrigin ? `(SELECT "idItem" FROM bjumperv2."Item" WHERE "idOriginSystem" = ${idOriginSystem} AND "idIteminOrigin" = '${idParentinOrigin}'), ` : 'NULL, ')
-    + `${Active}`
+    + `${idItem}`
     + ')';
 
 const insertItems = async items => {
@@ -132,11 +139,20 @@ const insertItems = async items => {
         return null;
     }
 
-    const query = 'INSERT INTO bjumperv2."Item"("Name", "idItemClass", "idIteminOrigin", "idOriginSystem", "idParent", "Active")'
-    + ' VALUES\n' + items.map(mapItemForInsert).join(',\n') + ';';
+    const insertA = 'INSERT INTO bjumperv2."Item"("Name", "idItemClass", "idParent", "Active")'
+    + ' VALUES\n' + items.map(mapItemForInsert).join(',\n') + '\nRETURNING "idItem";';
 
     const postgresClient = await postgrePromise;
-    return await postgresClient.query(query);
+    const result = await postgresClient.query(insertA);
+
+    for (let i = 0; i < result.rows.length; i++) {
+        items[i].idItem = result.rows[i].idItem;
+    }
+
+    const insertB = 'INSERT INTO bjumperv2."OriginSystem-Item"("idIteminOrigin", "idOriginSystem", "idItem")'
+    + ' VALUES\n' + items.map(mapItemOriginSystemForInsert).join(',\n') + ';';
+
+    return await postgresClient.query(insertB);
 };
 
 const mapItemForUpdate = 
@@ -158,10 +174,11 @@ const updateItems = async items => {
     return await postgresClient.query(query);
 };
 
-const mapItemForMeasure = ({ itemIdInOrigin, originSystemId, measureId, value, timestamp }) =>
+const mapItemForMeasureValue = ({ itemIdInOrigin, originSystemId, measureId, value, timestamp }) =>
     '(' 
-    + `(SELECT "idItem" FROM bjumperv2."Item" WHERE "idIteminOrigin" = '${itemIdInOrigin}' AND "idOriginSystem" = ${originSystemId}),`
+    + `(SELECT "idItem" FROM bjumperv2."OriginSystem-Item" WHERE "idIteminOrigin" = '${itemIdInOrigin}' AND "idOriginSystem" = ${originSystemId}),`
     + `${measureId},`
+    + `${originSystemId},`
     + `'${value}',`
     + `'${timestamp}'`
     + ')';
@@ -179,8 +196,8 @@ const insertMeasures = async (dataItems, originSystemId, measuresIds) => {
         }
     }
 
-    const query = 'INSERT INTO bjumperv2."MeasureValue" ("idItem", "idMeasure", "Value", "MeasureTimestamp")'
-    + ' VALUES \n' + measures.map(mapItemForMeasure).join(',\n') + ';'
+    const query = 'INSERT INTO bjumperv2."MeasureValue" ("idItem", "idMeasure", "idOriginSystem", "Value", "MeasureTimestamp")'
+    + ' VALUES \n' + measures.map(mapItemForMeasureValue).join(',\n') + ';'
 
     const postgresClient = await postgrePromise;
     return await postgresClient.query(query);

@@ -19,23 +19,28 @@ CREATE TABLE "ItemClass" (
     "Name"           VARCHAR(250) UNIQUE NOT NULL
 );
 
+CREATE TABLE "Item" (
+    "idItem"         BIGSERIAL PRIMARY KEY,
+    "Name"           VARCHAR(250) NOT NULL,
+    "idItemClass"    BIGINT NOT NULL,
+    "idParent"       BIGINT DEFAULT NULL,
+    "Active"         BOOLEAN NOT NULL,
+    FOREIGN KEY ("idItemClass") REFERENCES "ItemClass" ("idItemClass"),
+    FOREIGN KEY ("idParent") REFERENCES "Item" ("idItem")
+);
+
 CREATE TABLE "OriginSystem" (
     "idOriginSystem" BIGSERIAL PRIMARY KEY,
     "Name"           VARCHAR(250) UNIQUE NOT NULL
 );
 
-CREATE TABLE "Item" (
-    "idItem"         BIGSERIAL PRIMARY KEY,
-    "Name"           VARCHAR(250) NOT NULL,
-    "idItemClass"    BIGINT NOT NULL,
-    "idIteminOrigin" VARCHAR(250) NOT NULL,
+CREATE TABLE "OriginSystem-Item" (
     "idOriginSystem" BIGINT NOT NULL,
-    "idParent"       BIGINT DEFAULT NULL,
-    "Active"         BOOLEAN NOT NULL,
-    UNIQUE      ("idOriginSystem", "idIteminOrigin"),
-    FOREIGN KEY ("idItemClass") REFERENCES "ItemClass" ("idItemClass"),
+    "idIteminOrigin" VARCHAR(250) NOT NULL,
+    "idItem"         BIGINT NOT NULL,
+    PRIMARY KEY ("idOriginSystem", "idIteminOrigin"),
     FOREIGN KEY ("idOriginSystem") REFERENCES "OriginSystem" ("idOriginSystem"),
-    FOREIGN KEY ("idParent") REFERENCES "Item" ("idItem")
+    FOREIGN KEY ("idItem") REFERENCES "Item" ("idItem")
 );
 
 CREATE TABLE "UnitDataType" (
@@ -63,10 +68,12 @@ CREATE TABLE "MeasureValue" (
     "idMeasureValue" BIGSERIAL PRIMARY KEY,
     "idItem"         BIGINT NOT NULL,
     "idMeasure"      BIGINT NOT NULL,
+    "idOriginSystem" BIGINT NOT NULL,
     "Value"          VARCHAR(250) DEFAULT NULL,
     "MeasureTimestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     FOREIGN KEY ("idItem") REFERENCES "Item" ("idItem"),
-    FOREIGN KEY ("idMeasure") REFERENCES "Measure" ("idMeasure")
+    FOREIGN KEY ("idMeasure") REFERENCES "Measure" ("idMeasure"),
+    FOREIGN KEY ("idOriginSystem") REFERENCES "OriginSystem" ("idOriginSystem")
 );
 
 INSERT INTO "OriginSystem" ("idOriginSystem", "Name") VALUES
