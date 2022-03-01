@@ -13,7 +13,6 @@ console.log('itemClassesIds', itemClassesIds);
 
     // Obtener un índice todos loss measures utilizadas en un objeto { measure: measureId}, ejemplo: { PUE: 38 }
     // Si aparece una measure desconocida, se produce un error
-
     const measuresIds = await getMeasuresIds(
         dataItems
             .map(dataItem => dataItem.measures)
@@ -88,7 +87,6 @@ console.log('originSystemId', originSystemId);
         }
     }
 
-console.log('systemItemsToCreate', systemItemsToCreate);
 console.log('systemItemsToUpdate', systemItemsToUpdate);
 
     // Quedan los items de sistema que no están en dataItems: son los que tienen deactivate = true
@@ -97,11 +95,11 @@ console.log('systemItemsToUpdate', systemItemsToUpdate);
         .filter(systemItem => systemItem.deactivate)
         .map(systemItem => systemItem.id);
 
-console.log('toDeactivate', toDeactivate);
+console.log('idsToDeactivate', toDeactivate);
 
     const groups = reOrderItems(systemItemsToCreate);
 
-console.log('groups', groups);
+console.log('groupsToCreate', groups);
 
     for(const group of groups) {
         await insertItems(group);
