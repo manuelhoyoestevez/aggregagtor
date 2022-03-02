@@ -88,17 +88,16 @@ const getItemClasses = async itemClasses => {
     return index;
 };
 
-const getSystemItemsIndex = async originSystemId => {
-    const index = {};
-
+const getSystemItems = async (originSystemId) => {
     const query =  `SELECT 
                         X."idItem" AS "id",
                         X."idIteminOrigin" AS "originId",
                         I."Name" AS name,
                         I."idItemClass" AS "itemClassId",
                         I."idParent" as "parentId",
+                        Y."idIteminOrigin" AS "originParentId",
                         I."Active" AS "active",
-                        Y."idIteminOrigin" AS "originParentId"
+                        NULL AS "action"
                     FROM bjumperv2."OriginSystem-Item" X
                         LEFT OUTER JOIN bjumperv2."Item" I ON X."idItem" = I."idItem"
                         LEFT OUTER JOIN bjumperv2."OriginSystem-Item" Y ON I."idParent" = Y."idItem"
@@ -106,70 +105,57 @@ const getSystemItemsIndex = async originSystemId => {
 
     const postgresClient = await postgrePromise;
     const result = await postgresClient.query(query);
-
-    for (const row of result.rows) {
-        index[row.originId] = {
-            deactivate: row.active,
-            ...row,
-        };
-    }
-
-    return index;
+    return result.rows;
 };
 
-const mapItemForInsert = 
-    ({ Name, idItemClass, idOriginSystem, idParentinOrigin, Active }) => 
-    '('
-    + `'${Name}', `
-    + `${idItemClass}, `
-    + (idParentinOrigin ? `(SELECT "idItem" FROM bjumperv2."OriginSystem-Item" WHERE "idOriginSystem" = ${idOriginSystem} AND "idIteminOrigin" = '${idParentinOrigin}'), ` : 'NULL, ')
-    + `${Active}`
+const mapItemForInsert = (idOriginSystem, { name, itemClassId, originParentId, active }) => '('
+    + `'${name}', `
+    + `${itemClassId}, `
+    + (originParentId ? `(SELECT "idItem" FROM bjumperv2."OriginSystem-Item" WHERE "idOriginSystem" = ${idOriginSystem} AND "idIteminOrigin" = '${originParentId}'), ` : 'NULL, ')
+    + `${active}`
     + ')';
 
-const mapItemOriginSystemForInsert = 
-    ({ idIteminOrigin, idOriginSystem, idItem }) => 
-    '('
-    + `'${idIteminOrigin}', `
+const mapItemOriginSystemForInsert = (idOriginSystem, { originId, id }) => '('
+    + `'${originId}', `
     + `${idOriginSystem}, `
-    + `${idItem}`
+    + `${id}`
     + ')';
 
-const insertItems = async items => {
+const insertItems = async (items, idOriginSystem) => {
     if (items.length === 0) {
         return null;
     }
 
     const insertA = 'INSERT INTO bjumperv2."Item"("Name", "idItemClass", "idParent", "Active")'
-    + ' VALUES\n' + items.map(mapItemForInsert).join(',\n') + '\nRETURNING "idItem";';
+    + ' VALUES\n' + items.map(item => mapItemForInsert(idOriginSystem, item)).join(',\n') + '\nRETURNING "idItem";';
 
     const postgresClient = await postgrePromise;
     const result = await postgresClient.query(insertA);
 
     for (let i = 0; i < result.rows.length; i++) {
-        items[i].idItem = result.rows[i].idItem;
+        items[i].id = result.rows[i].idItem;
     }
 
     const insertB = 'INSERT INTO bjumperv2."OriginSystem-Item"("idIteminOrigin", "idOriginSystem", "idItem")'
-    + ' VALUES\n' + items.map(mapItemOriginSystemForInsert).join(',\n') + ';';
+    + ' VALUES\n' + items.map(item => mapItemOriginSystemForInsert(idOriginSystem, item)).join(',\n') + ';';
 
     return await postgresClient.query(insertB);
 };
 
-const mapItemForUpdate = 
-    ({ idItem, Name, idItemClass, idParent, Active }) => 
+const mapItemForUpdate = (idOriginSystem, { id, name, itemClassId, originParentId, active }) => 
     'UPDATE bjumperv2."Item" SET '
-    + `"Name" = '${Name}',`
-    + `"idItemClass" = ${idItemClass},`
-    + `"idParent" = ${idParent},`
-    + `"Active" = ${Active} `
-    + `WHERE "idItem" = ${idItem};`;
+    + `"Name" = '${name}',`
+    + `"idItemClass" = ${itemClassId},`
+    + '"idParent" = ' + (originParentId ? `(SELECT "idItem" FROM bjumperv2."OriginSystem-Item" WHERE "idOriginSystem" = ${idOriginSystem} AND "idIteminOrigin" = '${originParentId}'), ` : 'NULL, ')
+    + `"Active" = ${active} `
+    + `WHERE "idItem" = ${id};`;
 
-const updateItems = async items => {
+const updateItems = async (items, idOriginSystem) => {
     if (items.length === 0) {
         return null;
     }
 
-    const query = items.map(mapItemForUpdate).join('\n');
+    const query = items.map(item => mapItemForUpdate(idOriginSystem, item)).join('\n');
     const postgresClient = await postgrePromise;
     return await postgresClient.query(query);
 };
@@ -214,4 +200,4 @@ const deactivateItems = async dataItemsIds => {
     return await postgresClient.query(query);
 };
 
-module.exports = { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItemsIndex, insertItems, updateItems, insertMeasures, deactivateItems };
+module.exports = { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItems, insertItems, updateItems, insertMeasures, deactivateItems };

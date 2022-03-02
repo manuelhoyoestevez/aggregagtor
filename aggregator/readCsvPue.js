@@ -61,7 +61,7 @@ const translateDate = (date) => {
             };
 
             console.log("Sending: ", toSend);
-
+console.log('copy: ', JSON.stringify(toSend))
             produce(JSON.stringify(toSend));
         });
     } catch (e) {

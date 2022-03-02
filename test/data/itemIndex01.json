@@ -1,0 +1,122 @@
+{
+	"I": {
+		"id": "7",
+		"originId": "I",
+		"name": "I 02",
+		"itemClassId": "4",
+		"parentId": null,
+		"originParentId": "F",
+		"active": true,
+		"action": "none"
+	},
+	"C": {
+		"id": "2",
+		"originId": "C",
+		"name": "Room C",
+		"itemClassId": "2",
+		"parentId": null,
+		"originParentId": "A",
+		"active": true,
+		"action": "none"
+	},
+	"D": {
+		"id": "5",
+		"originId": "D",
+		"name": "SC1-AGP-D",
+		"itemClassId": "3",
+		"parentId": null,
+		"originParentId": "B",
+		"active": true,
+		"action": "none"
+	},
+	"A": {
+		"id": "1",
+		"originId": "A",
+		"name": "Bjumper Lab",
+		"itemClassId": "1",
+		"parentId": null,
+		"originParentId": null,
+		"active": true,
+		"action": "none"
+	},
+	"H": {
+		"id": "10",
+		"originId": "H",
+		"name": "H 01",
+		"itemClassId": "4",
+		"parentId": null,
+		"originParentId": "E",
+		"active": true,
+		"action": "none"
+	},
+	"E": {
+		"id": "6",
+		"originId": "E",
+		"name": "SC2-AGP-E",
+		"itemClassId": "3",
+		"parentId": null,
+		"originParentId": "B",
+		"active": true,
+		"action": "none"
+	},
+	"B": {
+		"id": "3",
+		"originId": "B",
+		"name": "Room B",
+		"itemClassId": "2",
+		"parentId": null,
+		"originParentId": "A",
+		"active": true,
+		"action": "none"
+	},
+	"F": {
+		"id": "4",
+		"originId": "F",
+		"name": "SC3-AGP-F",
+		"itemClassId": "3",
+		"parentId": null,
+		"originParentId": "C",
+		"active": true,
+		"action": "none"
+	},
+	"G": {
+		"id": "9",
+		"originId": "G",
+		"name": "G 99",
+		"itemClassId": "4",
+		"parentId": null,
+		"originParentId": "D",
+		"active": true,
+		"action": "none"
+	},
+	"J": {
+		"id": "8",
+		"originId": "J",
+		"name": "J 03",
+		"itemClassId": "4",
+		"parentId": null,
+		"originParentId": "F",
+		"active": true,
+		"action": "none"
+	},
+	"Y": {
+		"id": "12",
+		"originId": "Y",
+		"name": "Room B",
+		"itemClassId": "2",
+		"parentId": "1",
+		"originParentId": "A",
+		"active": false,
+		"action": "none"
+	},
+	"X": {
+		"id": "11",
+		"originId": "X",
+		"name": "H 01",
+		"itemClassId": "4",
+		"parentId": "6",
+		"originParentId": "E",
+		"active": false,
+		"action": "none"
+	}
+}

@@ -3,42 +3,81 @@ const generateTree = items => {
     const parentIndex = {};
 
     for (const item of items) {
-        const parentId = item.idParentinOrigin;
+        const originParentId = item.originParentId;
 
-        if (parentId === null || item.idParent !== null) {
+        if (originParentId === null) {
             roots.push(item);
         }
 
-        if (parentIndex[parentId] === undefined) {
-            parentIndex[parentId] = [];
+        if (parentIndex[originParentId] === undefined) {
+            parentIndex[originParentId] = [];
         }
 
-        parentIndex[parentId].push(item);
+        parentIndex[originParentId].push(item);
     }
 
     for (const item of items) {
-        item.children = parentIndex[item.idIteminOrigin] || [];
+        item.children = parentIndex[item.originId] || [];
     }
 
     return roots;
 };
 
-const reOrderItems = items => {
-    const groups = [];
-    let visited = [];
-    let els = generateTree(items);
+const checkPath = (itemIndex, id, path, verified) => {
+    if (path.indexOf(id) >= 0) {
+        throw new Error('Cycle detected: ' + path.map(e => `'${e}'`).join(', '));
+    }
 
-    while(els.length > 0) {
-        groups.push(els);
-        const itemsIds = els.map(item => item.idIteminOrigin);
-        const intersection = itemsIds.filter(id => visited.includes(id));
+    if (verified.indexOf(id) >= 0) {
+        for(const i of path) {
+            verified.push(i);
+        }
+        return verified;
+    }
 
-        if (intersection.length > 0) {
-            throw new Error('Cycle detected for item IDs: ' + intersection.map(id => `'${id}'`).join(', '));
+    const item = itemIndex[id];
+
+    if (item === undefined) {
+        throw new Error(`Unknown item with ID: '${id}'`);
+    }
+
+    path.push(id);
+
+    return checkPath(itemIndex, item.originParentId, path, verified);
+};
+
+const checkItems = itemIndex => {
+    const verified = [];
+
+    // Se comprueba que los padres son válidos y se actualizan los ids internos de los padres cuando se conocen
+    for(const item of Object.values(itemIndex)) {
+
+        const parent = item.originParentId === null ? null : itemIndex[item.originParentId];
+        if (parent === undefined) {
+            throw new Error(`Item with origin ID '${item.originId}' has invalid parent origin ID: '${item.originParentId}'`);
         }
 
-        visited = visited
-            .concat(itemsIds);
+        if (parent === null) {
+            item.parentId = null;
+            verified.push(item.originId);
+            continue;
+        }
+    }
+
+    // Se comprueban los distintos caminos
+    for(const item of Object.values(itemIndex)) {
+        checkPath(itemIndex, item.originId, [], verified);
+    }
+
+    return verified;
+};
+
+const reorderItems = itemTree => {
+    let els = itemTree;
+    const groups = [];
+
+    while (els.length > 0) {
+        groups.push(els);
 
         els = els
             .map(item => item.children)
@@ -48,4 +87,6 @@ const reOrderItems = items => {
     return groups;
 };
 
-module.exports = { reOrderItems };
+const symplifyItemTree = itemTree => itemTree.reduce((p, { originId, children }) => ({ ...p, [originId]: symplifyItemTree(children) }), {});
+
+module.exports = { generateTree, checkItems, checkPath, reorderItems, symplifyItemTree };

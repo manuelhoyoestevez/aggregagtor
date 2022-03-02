@@ -15,6 +15,4 @@ const config = {
     }
 };
 
-console.log('Config loaded:', config);
-
 module.exports = config;
