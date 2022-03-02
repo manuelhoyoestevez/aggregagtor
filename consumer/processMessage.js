@@ -89,7 +89,6 @@ const processMessage = async ({ originSystem, dataItems }) => {
     // Esta función y analiza la consistencia de los items:
     // - Comprueba que el padre exista en el sistema
     // - Comprueba que no haya ciclos
-    // - Actualiza el índice con los IDs de los items internos creados
     checkItems(itemIndex);
 
     // Items a crear
