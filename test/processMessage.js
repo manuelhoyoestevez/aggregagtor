@@ -44,16 +44,16 @@ describe('Process message', () => {
         result = await processMessage({
             originSystem: 'Test',
             dataItems: [
-                { idItem: 'I', itemClass: 'Rack', name: 'I 02', 'parentIdItem': 'F', measures: [] },
+                { idItem: 'B', itemClass: 'Room', name: 'Room B', parentIdItem: 'A', measures: [] },
                 { idItem: 'C', itemClass: 'Room', name: 'Room C', parentIdItem: 'A', measures: [] },
+                { idItem: 'F', itemClass: 'Row', name: 'SC3-AGP-F', parentIdItem: 'C', measures: [] },
                 { idItem: 'D', itemClass: 'Row', name: 'SC1-AGP-D', parentIdItem: 'B', measures: [] },
-                { idItem: 'A', itemClass: 'Datacenter', name: 'Bjumper Lab', parentIdItem: null, measures: [] },
                 { idItem: 'H', itemClass: 'Rack', name: 'H 01A', parentIdItem: 'E', measures: [] },
                 { idItem: 'E', itemClass: 'Row', name: 'SC2-AGP-E', parentIdItem: 'B', measures: [] },
-                { idItem: 'B', itemClass: 'Room', name: 'Room B', parentIdItem: 'A', measures: [] },
-                { idItem: 'F', itemClass: 'Row', name: 'SC3-AGP-F', parentIdItem: 'C', measures: [] },
                 { idItem: 'J', itemClass: 'Rack', name: 'J 03', parentIdItem: 'F', measures: [] },
-                { idItem: 'K', itemClass: 'Rack', name: 'K 99', parentIdItem: 'D', measures: [] }
+                { idItem: 'I', itemClass: 'Rack', name: 'I 02', 'parentIdItem': 'F', measures: [] },
+                { idItem: 'K', itemClass: 'Rack', name: 'K 99', parentIdItem: 'D', measures: [] },
+                { idItem: 'A', itemClass: 'Datacenter', name: 'Bjumper Lab', parentIdItem: null, measures: [] }
             ]
         });
 
@@ -69,5 +69,27 @@ describe('Process message', () => {
         assert.equal(result.itemIndex['I'].action, 'none');
         assert.equal(result.itemIndex['J'].action, 'none');
         assert.equal(result.itemIndex['K'].action, 'create');
+
+        try {
+            await processMessage({
+                originSystem: 'Test',
+                dataItems: [
+                    { idItem: 'A', itemClass: 'Datacenter', name: 'Bjumper Lab', parentIdItem: 'X', measures: [] }
+                ]
+            });
+        } catch (e) {
+            assert.equal(e.toString(), "Error: Item with origin ID 'A' has invalid parent origin ID: 'X'");
+        }
+
+        try {
+            await processMessage({
+                originSystem: 'Test',
+                dataItems: [
+                    { idItem: 'A', itemClass: 'Datacenter', name: 'Bjumper Lab', parentIdItem: 'F', measures: [] }
+                ]
+            });
+        } catch (e) {
+            assert.equal(e.toString(), "Error: Cycle detected: 'A', 'F', 'C'");
+        }
     });
 });
