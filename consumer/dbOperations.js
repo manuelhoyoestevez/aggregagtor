@@ -182,12 +182,16 @@ const insertMeasures = async (dataItems, originSystemId, measuresIds) => {
         }
     }
 
+    if (measures.length === 0) {
+        return null;
+    }
+
     const query = 'INSERT INTO bjumperv2."MeasureValue" ("idItem", "idMeasure", "idOriginSystem", "Value", "MeasureTimestamp")'
-    + ' VALUES \n' + measures.map(mapItemForMeasureValue).join(',\n') + ';'
+    + ' VALUES \n' + measures.map(mapItemForMeasureValue).join(',\n') + ';';
 
     const postgresClient = await postgrePromise;
     return await postgresClient.query(query);
-}
+};
 
 const deactivateItems = async dataItemsIds => {
     if (dataItemsIds.length === 0) {
@@ -200,4 +204,20 @@ const deactivateItems = async dataItemsIds => {
     return await postgresClient.query(query);
 };
 
-module.exports = { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItems, insertItems, updateItems, insertMeasures, deactivateItems };
+const deleteAll = async originSystemId => {
+    const postgresClient = await postgrePromise;
+
+    // Borrar medidas
+    await postgresClient.query(`DELETE FROM bjumperv2."MeasureValue" WHERE "idOriginSystem" = ${originSystemId};`);
+
+    // Sacar ids a eliminar
+    const result = await postgresClient.query(`SELECT "idItem" AS "id" FROM bjumperv2."OriginSystem-Item" WHERE "idOriginSystem" = ${originSystemId};`);
+    const itemIds = result.rows.map(({ id }) => id);
+
+    if (itemIds.length > 0) {
+        await postgresClient.query(`DELETE FROM bjumperv2."OriginSystem-Item" WHERE "idItem" IN (${itemIds.map(id => `'${id}'`).join(',')});`);
+        await postgresClient.query(`DELETE FROM bjumperv2."Item" WHERE "idItem" IN (${itemIds.map(id => `'${id}'`).join(',')});`);
+    }
+};
+
+module.exports = { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItems, insertItems, updateItems, insertMeasures, deactivateItems, deleteAll };

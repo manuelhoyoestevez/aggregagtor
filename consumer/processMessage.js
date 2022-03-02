@@ -1,5 +1,5 @@
 const { getOriginSystemId, getItemClasses, getMeasuresIds, getSystemItems, insertItems, updateItems, insertMeasures, deactivateItems } = require('./dbOperations');
-const { reorderItems } = require('./reorderItems');
+const { generateTree, checkItems, reorderItems } = require('./reorderItems');
 
 const processMessage = async ({ originSystem, dataItems }) => {
     // Obtener el ID del sistema origen, ejemplo: ITA: 4
@@ -54,8 +54,6 @@ const processMessage = async ({ originSystem, dataItems }) => {
         }
     ), {});
 
-//console.log('itemIndex (1)', itemIndex);
-
     const systemItems = await getSystemItems(originSystemId);
 
 //console.log('systemItems', systemItems);
@@ -86,18 +84,21 @@ const processMessage = async ({ originSystem, dataItems }) => {
         // Caso D: el item no está en el sistema: se crea
     }
 
-console.log('itemIndex (2)', JSON.stringify(itemIndex)); return;
-
     // Ahora con el índice con toda la información ya sabemos qué operación se debe realizar para cada item
 
     // Esta función y analiza la consistencia de los items:
     // - Comprueba que el padre exista en el sistema
     // - Comprueba que no haya ciclos
     // - Actualiza el índice con los IDs de los items internos creados
-    // - Devuelve un array de grupos de items en el orden correcto para ser insertados
-    const itemsGroupsToCreate = reorderItems(itemIndex);
+    checkItems(itemIndex);
 
-console.log('itemsGroupsToCreate', itemsGroupsToCreate);
+    // Items a crear
+    const itemsToCreate = Object.values(itemIndex)
+        .filter(item => item.action === 'create');
+
+    // Es necesario agrupar los items a crear
+    const itemTree = generateTree(itemsToCreate);
+    const itemsGroupsToCreate = reorderItems(itemTree);
 
     // Creamos los items según los grupos obtenidos
     for(const itemsToCreate of itemsGroupsToCreate) {
@@ -108,8 +109,6 @@ console.log('itemsGroupsToCreate', itemsGroupsToCreate);
     const itemsToUpdate = Object.values(itemIndex)
         .filter(item => item.action === 'update');
 
-console.log('itemsToUpdate', itemsToUpdate);
-
     await updateItems(itemsToUpdate, originSystemId);
 
     // Obtenemos los IDs de los item a desactivar y los desactivamos
@@ -117,12 +116,12 @@ console.log('itemsToUpdate', itemsToUpdate);
         .filter(item => item.action === 'deactivate')
         .map(item => item.id);
 
-console.log('idsToDeactivate', idsToDeactivate);
-
     await deactivateItems(idsToDeactivate);
-return;
+
     // Insertamos las medidas
-    await insertMeasures(itemIndex, originSystemId, measuresIds);
+    await insertMeasures(dataItems, originSystemId, measuresIds);
+
+    return { originSystemId, itemClassesIds, measuresIds, itemIndex };
 };
 
 const areNotEqual = (dataItem, systemItem) => {

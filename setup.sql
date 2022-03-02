@@ -79,7 +79,8 @@ CREATE TABLE "MeasureValue" (
 INSERT INTO "OriginSystem" ("idOriginSystem", "Name") VALUES
 (1, 'iTracs'),
 (2, 'ITA'),
-(3, 'File');
+(3, 'File'),
+(4, 'Test');
 
 INSERT INTO "ItemClass" ("idItemClass", "Name") VALUES
 (1, 'Datacenter'),
